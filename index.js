@@ -9,7 +9,7 @@ const cors = require('cors')
 const sequelize = require('./models/index')
 
 const app = express()
-app.use(cors())
+app.use(cors({ origin: '*' })); // tighten origin in prod
 app.use(express.json())
 
 app.use('/api/auth', authRoutes)

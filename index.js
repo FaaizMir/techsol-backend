@@ -1,5 +1,14 @@
 const express = require('express')
 const dotenv = require('dotenv')
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
+console.log("Loaded env:", {
+  DB_HOST: process.env.DB_HOST,
+  DB_USER: process.env.DB_USER,
+  DB_PASS: process.env.DB_PASS,
+  DB_NAME: process.env.DB_NAME
+});
+
+
 // Load environment variables early so modules that require them at load time see them
 dotenv.config()
 const authRoutes = require('./routes/auth')
@@ -22,7 +31,7 @@ async function start() {
 		await sequelize.sync()
 		console.log('Database synced')
 
-		const PORT = process.env.PORT || 5000
+		const PORT = process.env.APP_PORT || 5000
 		const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
 
 		// Graceful shutdown helper

@@ -21,14 +21,14 @@ const sequelize = require('./models/index')
 const app = express()
 
 // IMPROVED CORS CONFIGURATION - This is the main fix for your CORS issue
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'https://techsol-backend.vercel.app'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 200
-}));
+// app.use(cors({
+//   origin: ['http://localhost:3000', 'http://localhost:3001', 'https://techsol-backend.vercel.app'],
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+//   credentials: true,
+//   preflightContinue: false,
+//   optionsSuccessStatus: 200
+// }));
 
 // Handle preflight requests explicitly
 app.options('*', cors());

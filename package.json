@@ -2,10 +2,10 @@
   "name": "tech-solutions-backendd",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-    "dev": "cross-env NODE_ENV=development node index.js",
-    "start": "cross-env NODE_ENV=production node index.js"
-  },
+"scripts": {
+  "dev": "cross-env NODE_ENV=development node index.js",
+  "start": "node index.js"
+},
   "engines": {
     "node": ">=18"
   },

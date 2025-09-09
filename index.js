@@ -10,7 +10,6 @@ console.log("Loaded env:", {
   DB_NAME: process.env.DB_NAME
 });
 
-
 // Load environment variables early so modules that require them at load time see them
 dotenv.config()
 const authRoutes = require('./routes/auth')
@@ -20,18 +19,30 @@ const cors = require('cors')
 const sequelize = require('./models/index')
 
 const app = express()
+
+// IMPROVED CORS CONFIGURATION - This is the main fix for your CORS issue
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'https://techsol-backend.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 
-
+// Handle preflight requests explicitly
+app.options('*', cors());
 
 app.use(express.json())
 
+// Add health check
+app.get('/', (req, res) => {
+  res.json({ message: 'Server is running', timestamp: new Date().toISOString() })
+})
+
 app.use('/api/auth', authRoutes)
 app.use('/api/protected', protectedRoutes)
+
 // Start up: authenticate and sync DB, then start HTTP server
 async function start() {
     try {

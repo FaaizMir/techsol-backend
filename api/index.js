@@ -20,7 +20,7 @@ const app = express();
 const corsOptions = {
   origin: ['http://localhost:3000', 'https://your-frontend.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization'], // Add 'Authorization' here
 };
 app.use(cors(corsOptions));
 app.use(express.json());

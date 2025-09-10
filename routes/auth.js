@@ -53,49 +53,51 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/User'); // Model is fine
+const sequelize = require('../models/index'); // Import sequelize instance
 
 const router = express.Router();
 
-const allowedOrigins = [
-  'http://localhost:3000',             // Local dev frontend
-  'https://your-frontend.vercel.app'  // Replace with your live frontend URL
-];
-
-// ----- CORS middleware (must be first) -----
-router.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+// Helper function to initialize database connection and sync models
+// Caching the promise to avoid duplicate initialization in the same cold start
+let sequelizeInitPromise = null;
+const initDb = async () => {
+  if (sequelizeInitPromise) {
+    return sequelizeInitPromise;
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200); // Preflight response
-  }
-
-  next();
-});
+  sequelizeInitPromise = (async () => {
+    try {
+      await sequelize.authenticate();
+      await sequelize.sync(); // You might want to use migrations for production
+    } catch (error) {
+      console.error('Database connection or sync failed:', error);
+      throw error; // Re-throw to prevent route from proceeding
+    }
+  })();
+  return sequelizeInitPromise;
+};
 
 // Signup
 router.post('/signup', async (req, res) => {
-  const { username, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   try {
+    await initDb(); // Connect and sync on demand
+    
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await User.create({ username, password: hashedPassword });
     res.status(201).json({ message: 'User created', user: { id: user.id, username: user.username } });
   } catch (err) {
-    res.status(400).json({ error: 'Username already exists' });
+    res.status(400).json({ error: err.message || 'Username already exists' });
   }
 });
 
 // Login
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
   try {
+    await initDb(); // Connect and sync on demand
+    
+    const { username, password } = req.body;
     const user = await User.findOne({ where: { username } });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 

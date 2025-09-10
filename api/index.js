@@ -18,7 +18,7 @@ const app = express();
 
 // CORS config (updated)
 const corsOptions = {
-  origin: ['http://localhost:3000', 'https://your-frontend.vercel.app'],
+  origin: ['http://localhost:3000', 'https://techsol-five.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'], // Add 'Authorization' here
 };

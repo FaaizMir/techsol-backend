@@ -11,6 +11,8 @@ const sequelize = new Sequelize(dbName, dbUser, dbPass, {
   host: dbHost,
   port: dbPort,
   dialect: dbDialect,
+    dialectModule: require('mysql2'), // Add this line
+
   logging: console.log
 })
 

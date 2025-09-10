@@ -30,10 +30,10 @@ const app = express();
 const corsOptions = {
   origin: ['http://localhost:3000', 'https://your-frontend.vercel.app'],
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  allowedHeaders: ['Content-Type'],
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+// app.options('*', cors(corsOptions));
 
 app.use(express.json());
 

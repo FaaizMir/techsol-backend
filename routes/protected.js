@@ -1,17 +1,9 @@
-const express = require('express')
-const authMiddleware = require('../middleware/authMiddleware')
-const router = express.Router()
+const express = require('express');
+const authMiddleware = require('../middleware/authMiddleware');
+const protectedController = require('../controllers/protectedController');
+const router = express.Router();
 
-router.get('/profile', authMiddleware, (req, res) => {
-  res.json({ message: 'This is a protected route', user: req.user })
-})
+router.get('/profile', authMiddleware, protectedController.getProfile);
+router.get('/check-auth', authMiddleware, protectedController.checkAuth);
 
-// GET /api/check-auth
-router.get("/check-auth", authMiddleware, (req, res) => {
- res.json({
-    valid: true,
-    user: req.user, // comes from middleware
-  });
-});
-
-module.exports = router
+module.exports = router;

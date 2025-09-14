@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "api/index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node server.js",
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
     "start": "node api/index.js",
     "build": "echo 'No build step required'",
     "db:migrate": "sequelize-cli db:migrate",
@@ -25,11 +25,13 @@
     "express": "^4.21.2",
     "google-auth-library": "^10.3.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
     "mysql2": "^3.14.5",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
     "cross-env": "^10.0.0",
+    "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.2"
   }
 }

@@ -6,6 +6,8 @@ const logger = require('./utils/logger');
 const startServer = async () => {
   try {
     await sequelize.authenticate();
+    // Load associations after authenticate
+    require('./models/associations');
     await sequelize.sync({ force: false, alter: true });
     logger.info('Database connected and synced');
 

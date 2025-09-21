@@ -28,8 +28,8 @@ const Project = sequelize.define('Project', {
     }
   },
   status: {
-    type: DataTypes.ENUM('draft', 'active', 'completed', 'cancelled'),
-    defaultValue: 'draft'
+    type: DataTypes.ENUM('pending', 'active', 'completed', 'cancelled'),
+    defaultValue: 'pending'
   }
 }, {
   timestamps: true

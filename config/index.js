@@ -11,7 +11,7 @@ module.exports = {
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASS || '',
-    name: process.env.DB_NAME || 'test_db',
+    name: process.env.DB_NAME || 'techsolutions',
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development',
   },

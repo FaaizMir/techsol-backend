@@ -13,6 +13,6 @@ module.exports = {
     password: process.env.DB_PASS || '',
     name: process.env.DB_NAME || 'techsolutions',
     dialect: 'mysql',
-    logging: process.env.NODE_ENV === 'development',
+    logging: false, // Disable query logging
   },
 };

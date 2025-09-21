@@ -34,16 +34,12 @@ exports.startOnboarding = async (req, res, next) => {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } });
     }
 
-    // Create a draft project
-    const project = await Project.create({ userId, title: 'Draft Project', description: 'Draft description', category: 'other', deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
-
-    // Initialize progress
-    await updateProgress(userId, project.id, 0);
-
+    // Just initialize progress - don't create draft project yet
+    // Progress will be created when first step is saved
     res.json({
       success: true,
       data: {
-        projectId: project.id,
+        projectId: null, // Will be set when project details are saved
         currentStep: 0,
         message: 'Onboarding started successfully'
       }
@@ -63,17 +59,38 @@ exports.saveProjectDetails = async (req, res, next) => {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'All fields are required' } });
     }
 
+    // Create the actual project with user-provided details
     const project = await Project.create({
       title,
       description,
       category,
       deadline: new Date(deadline),
-      status: "pending",
+      status: "draft", // Start as draft, will be activated when onboarding completes
       userId,
     });
 
-    res.json({ success: true, data: { project, nextStep: 1 } });
+    // Initialize progress tracking for this project
+    await updateProgress(userId, project.id, 1);
+
+    res.json({
+      success: true,
+      data: {
+        project: {
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          category: project.category,
+          deadline: project.deadline,
+          status: project.status
+        },
+        nextStep: 1
+      }
+    });
   } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      const messages = error.errors.map(e => e.message);
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: messages.join(', ') } });
+    }
     next(error);
   }
 };
@@ -186,7 +203,7 @@ exports.saveMilestones = async (req, res, next) => {
 exports.saveClientInfo = async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const { name, email, company, country, phone } = req.body;
+    const { name, email, company, country, phone, contactPerson } = req.body;
     const userId = req.user.id;
 
     // Check if project exists and belongs to user
@@ -199,11 +216,17 @@ exports.saveClientInfo = async (req, res, next) => {
     }
 
     // Create or update client
-    let client = await Client.findOne({ where: { projectId } });
-    if (client) {
-      await client.update({ name, email, company, country, phone });
-    } else {
-      client = await Client.create({ projectId, name, email, company, country, phone });
+    let client;
+    if (project.clientId) {
+      client = await Client.findByPk(project.clientId);
+      if (client) {
+        await client.update({ name, email, company, country, phone, contactPerson });
+      }
+    }
+
+    if (!client) {
+      client = await Client.create({ name, email, company, country, phone, contactPerson });
+      await project.update({ clientId: client.id });
     }
 
     // Update project progress to step 4
@@ -218,7 +241,8 @@ exports.saveClientInfo = async (req, res, next) => {
           email: client.email,
           company: client.company,
           country: client.country,
-          phone: client.phone
+          phone: client.phone,
+          contactPerson: client.contactPerson
         },
         nextStep: 4
       }
@@ -500,14 +524,52 @@ exports.updateStep = async (req, res, next) => {
 exports.getProjects = async (req, res, next) => {
   try {
     const userId = req.user.id;
-console.log("Fetching projects for user:", userId);
-    // Only fetch projects for this user, no includes
+
     const projects = await Project.findAll({
       where: { userId },
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'name', 'email', 'company']
+        },
+        {
+          model: Milestone,
+          as: 'milestones',
+          attributes: ['id', 'title', 'amount', 'status'],
+          order: [['order', 'ASC']]
+        }
+      ],
       order: [['createdAt', 'DESC']]
     });
 
-    res.json({ success: true, data: projects });
+    const formattedProjects = projects.map(p => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      category: p.category,
+      deadline: p.deadline,
+      status: p.status,
+      progress: p.progress || 0,
+      priority: p.priority || 'medium',
+      budget: p.budget ? parseFloat(p.budget) : null,
+      client: p.client ? {
+        id: p.client.id,
+        name: p.client.name,
+        email: p.client.email,
+        company: p.client.company
+      } : null,
+      milestones: p.milestones?.map(m => ({
+        id: m.id,
+        title: m.title,
+        amount: parseFloat(m.amount) || 0,
+        status: m.status
+      })) || [],
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt
+    }));
+
+    res.json({ success: true, data: formattedProjects });
   } catch (error) {
     next(error);
   }
@@ -523,9 +585,22 @@ exports.getProjectById = async (req, res, next) => {
     const project = await Project.findOne({
       where: { id: projectId, userId },
       include: [
-        { model: Client, as: 'client' },
-        { model: Milestone, as: 'milestones', order: [['order', 'ASC']] },
-        { model: Requirement, as: 'requirements' }
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'name', 'email', 'company', 'country', 'phone', 'contactPerson']
+        },
+        {
+          model: Milestone,
+          as: 'milestones',
+          attributes: ['id', 'title', 'deliverable', 'deadline', 'amount', 'status', 'order'],
+          order: [['order', 'ASC']]
+        },
+        {
+          model: Requirement,
+          as: 'requirement',
+          attributes: ['id', 'notes', 'files']
+        }
       ]
     });
 
@@ -533,7 +608,46 @@ exports.getProjectById = async (req, res, next) => {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
     }
 
-    res.json({ success: true, data: project });
+    const formattedProject = {
+      id: project.id,
+      name: project.title,
+      status: project.status,
+      progress: project.progress || 0,
+      dueDate: project.deadline ? project.deadline.toISOString().split('T')[0] : null,
+      client: project.client?.name || 'No Client',
+      priority: project.priority || 'medium',
+      budget: project.budget ? parseFloat(project.budget) : null,
+      description: project.description,
+      category: project.category,
+      tasks: [], // Would need to implement task system
+      requirements: project.requirement ? {
+        id: project.requirement.id,
+        notes: project.requirement.notes,
+        files: project.requirement.files || []
+      } : null,
+      milestones: project.milestones?.map(m => ({
+        id: m.id,
+        title: m.title,
+        deliverable: m.deliverable,
+        deadline: m.deadline ? m.deadline.toISOString().split('T')[0] : null,
+        amount: parseFloat(m.amount) || 0,
+        status: m.status,
+        order: m.order
+      })) || [],
+      clientInfo: project.client ? {
+        id: project.client.id,
+        name: project.client.name,
+        email: project.client.email,
+        company: project.client.company,
+        country: project.client.country,
+        phone: project.client.phone,
+        contactPerson: project.client.contactPerson
+      } : null,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt
+    };
+
+    res.json({ success: true, data: formattedProject });
   } catch (error) {
     next(error);
   }
@@ -589,8 +703,160 @@ exports.getClient = async (req, res, next) => {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
     }
 
-    const client = await Client.findOne({ where: { projectId } });
+    const client = await Client.findOne({ where: { id: project.clientId } });
     res.json({ success: true, data: client });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- GET All Projects with Filtering ---
+exports.getAllProjects = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { status, search, page = 1, limit = 10 } = req.query;
+
+    const whereClause = { userId };
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (search) {
+      whereClause[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows: projects } = await Project.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          attributes: ['id', 'name', 'email', 'company', 'country', 'phone', 'contactPerson']
+        },
+        {
+          model: Milestone,
+          as: 'milestones',
+          attributes: ['id', 'title', 'deliverable', 'deadline', 'amount', 'status', 'order'],
+          order: [['order', 'ASC']]
+        },
+        {
+          model: Requirement,
+          as: 'requirement',
+          attributes: ['id', 'notes', 'files']
+        }
+      ],
+      order: [['updatedAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    const formattedProjects = projects.map(p => ({
+      id: p.id,
+      name: p.title,
+      status: p.status,
+      progress: p.progress || 0,
+      dueDate: p.deadline ? p.deadline.toISOString().split('T')[0] : null,
+      client: p.client?.name || 'No Client',
+      priority: p.priority || 'medium',
+      budget: p.budget ? parseFloat(p.budget) : null,
+      description: p.description,
+      tasks: [], // Would need to implement task system
+      requirements: p.requirement ? {
+        id: p.requirement.id,
+        notes: p.requirement.notes,
+        files: p.requirement.files || []
+      } : null,
+      milestones: p.milestones?.map(m => ({
+        id: m.id,
+        title: m.title,
+        deliverable: m.deliverable,
+        deadline: m.deadline ? m.deadline.toISOString().split('T')[0] : null,
+        amount: parseFloat(m.amount) || 0,
+        status: m.status,
+        order: m.order
+      })) || [],
+      clientInfo: p.client ? {
+        id: p.client.id,
+        name: p.client.name,
+        email: p.client.email,
+        company: p.client.company,
+        country: p.client.country,
+        phone: p.client.phone,
+        contactPerson: p.client.contactPerson
+      } : null,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt
+    }));
+
+    res.json({
+      success: true,
+      data: formattedProjects,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(count / limit)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- UPDATE Project Status ---
+exports.updateProjectStatus = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { status, progress } = req.body;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ where: { id: projectId, userId } });
+    if (!project) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
+    }
+
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (progress !== undefined) updateData.progress = progress;
+
+    await project.update(updateData);
+
+    res.json({
+      success: true,
+      data: {
+        id: project.id,
+        status: project.status,
+        progress: project.progress
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- DELETE Project ---
+exports.deleteProject = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user.id;
+
+    const project = await Project.findOne({ where: { id: projectId, userId } });
+    if (!project) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
+    }
+
+    await project.destroy();
+
+    res.json({
+      success: true,
+      message: 'Project deleted successfully'
+    });
   } catch (error) {
     next(error);
   }

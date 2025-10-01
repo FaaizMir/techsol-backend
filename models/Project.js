@@ -30,6 +30,33 @@ const Project = sequelize.define('Project', {
   status: {
     type: DataTypes.ENUM('pending', 'active', 'completed', 'cancelled'),
     defaultValue: 'pending'
+  },
+  progress: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 100
+    }
+  },
+  priority: {
+    type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
+    defaultValue: 'medium'
+  },
+  budget: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    validate: {
+      min: 0
+    }
+  },
+  clientId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Clients',
+      key: 'id'
+    }
   }
 }, {
   timestamps: true

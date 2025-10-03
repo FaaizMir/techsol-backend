@@ -8,8 +8,15 @@ exports.getProjectDocuments = async (req, res, next) => {
     const { projectId } = req.params;
     const userId = req.user.id;
 
-    // Verify project belongs to user
-    const project = await Project.findOne({ where: { id: projectId, userId } });
+    // Verify project belongs to user and include client
+    const project = await Project.findOne({ 
+      where: { id: projectId, userId },
+      include: [{
+        model: Client,
+        as: 'client',
+        attributes: ['name']
+      }]
+    });
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -19,12 +26,6 @@ exports.getProjectDocuments = async (req, res, next) => {
 
     const documents = await Document.findAll({
       where: { projectId },
-      include: [{
-        model: Client,
-        as: 'project.client',
-        attributes: ['name'],
-        required: false
-      }],
       order: [['createdAt', 'DESC']]
     });
 

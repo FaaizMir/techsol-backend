@@ -59,17 +59,30 @@ exports.saveProjectDetails = async (req, res, next) => {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'All fields are required' } });
     }
 
-    // Create the actual project with user-provided details
-    const project = await Project.create({
-      title,
-      description,
-      category,
-      deadline: new Date(deadline),
-      status: "draft", // Start as draft, will be activated when onboarding completes
-      userId,
-    });
+    // Check if user already has a draft project
+    let project = await Project.findOne({ where: { userId, status: 'draft' } });
 
-    // Initialize progress tracking for this project
+    if (project) {
+      // Update existing draft project
+      await project.update({
+        title,
+        description,
+        category,
+        deadline: new Date(deadline)
+      });
+    } else {
+      // Create new project
+      project = await Project.create({
+        title,
+        description,
+        category,
+        deadline: new Date(deadline),
+        status: "draft", // Start as draft
+        userId,
+      });
+    }
+
+    // Initialize or update progress tracking
     await updateProgress(userId, project.id, 1);
 
     res.json({
@@ -191,7 +204,9 @@ exports.saveMilestones = async (req, res, next) => {
       }))
     )
 
-    res.json({ success: true, data: created })
+    await updateProgress(userId, projectId, 3);
+
+    res.json({ success: true, data: created, nextStep: 3 })
   } catch (err) {
     console.error(err)
     res.status(500).json({ success: false, error: err.message })
@@ -203,7 +218,11 @@ exports.saveMilestones = async (req, res, next) => {
 exports.saveClientInfo = async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const { name, email, company, country, phone, contactPerson } = req.body;
+    const { client: clientData } = req.body;
+    if (!clientData) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Client data is required' } });
+    }
+    const { name, email, company, country, phone, contactPerson } = clientData;
     const userId = req.user.id;
 
     // Check if project exists and belongs to user
@@ -340,7 +359,6 @@ exports.completeOnboarding = async (req, res, next) => {
     const progress = await OnboardingProgress.findOne({ where: { userId, projectId } });
     if (progress) {
       progress.isCompleted = true;
-      progress.currentStep = 5;
       await progress.save();
     }
 
@@ -399,7 +417,8 @@ exports.getProgress = async (req, res, next) => {
         currentStep: latest.currentStep,
         isCompleted: latest.isCompleted,
         completedSteps: latest.completedSteps,
-        lastUpdated: latest.lastUpdated
+        lastUpdated: latest.lastUpdated,
+        projectId: latest.projectId
       }
     });
   } catch (error) {
@@ -480,7 +499,7 @@ exports.updateStep = async (req, res, next) => {
       return res.status(403).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Access denied' } });
     }
 
-    if (step < 0 || step > 5) {
+    if (step < 0 || step > 6) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid step' } });
     }
 
@@ -526,7 +545,7 @@ exports.getProjects = async (req, res, next) => {
     const userId = req.user.id;
 
     const projects = await Project.findAll({
-      where: { userId },
+      where: { userId, status: { [Op.ne]: 'draft' } },  // Filter out incomplete projects
       include: [
         {
           model: Client,
@@ -718,7 +737,10 @@ exports.getAllProjects = async (req, res, next) => {
 
     const whereClause = { userId };
 
-    if (status) {
+    // Filter out incomplete projects (status: 'draft') by default
+    if (!status) {
+      whereClause.status = { [Op.ne]: 'draft' };
+    } else {
       whereClause.status = status;
     }
 

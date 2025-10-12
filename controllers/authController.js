@@ -11,8 +11,8 @@ exports.signup = async (req, res, next) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashedPassword });
-    res.status(201).json({ message: 'User created', user: { id: user.id, email } });
+    const user = await User.create({ email, password: hashedPassword, role: 'user' });
+    res.status(201).json({ message: 'User created', user: { id: user.id, email, role: user.role } });
   } catch (error) {
     if (error.name === 'SequelizeValidationError') {
       const messages = error.errors.map(e => e.message);
@@ -32,10 +32,22 @@ exports.login = async (req, res, next) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, email }, config.jwtSecret, { expiresIn: '1h' });
+    
+    // Include role in JWT token
+    const token = jwt.sign({ 
+      id: user.id, 
+      email: user.email,
+      role: user.role 
+    }, config.jwtSecret, { expiresIn: '1h' });
+    
     const userData = user.toJSON();
     delete userData.password;
-    res.json({ token, user: userData });
+    
+    res.json({ 
+      token, 
+      user: userData,
+      role: user.role // Include role in response
+    });
   } catch (error) {
     next(error);
   }

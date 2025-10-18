@@ -10,7 +10,7 @@ const startServer = async () => {
     await sequelize.authenticate();
     // Load associations after authenticate
     require('./models/associations');
-    await sequelize.sync({ force: false, alter: true });
+    await sequelize.sync({ force: false });
     logger.info('Database connected and synced');
 
     // Create HTTP server from express app

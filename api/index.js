@@ -40,7 +40,13 @@ const initializeDatabase = async () => {
 initializeDatabase();
 
 // CORS
-app.use(cors({ origin: config.corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }));
+app.use(
+  cors({
+    origin: 'https://techsol-dj52-k9vp8u1zb-muhammad-ahmed-saleems-projects-7be8ac5a.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(express.json());
 
 // Serve static files from uploads directory

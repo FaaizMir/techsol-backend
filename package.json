@@ -12,7 +12,7 @@
     "db:seed:undo": "sequelize-cli db:seed:undo:all"
   },
   "engines": {
-    "node": "22.x"
+    "node": "18.x"
   },
   "keywords": [],
   "author": "",

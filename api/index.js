@@ -5,6 +5,9 @@ const config = require('../config/index');
 const errorHandler = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 
+// Initialize database connection for Vercel serverless
+const sequelize = require('../config/database');
+
 // Routes
 const authRoutes = require('../routes/auth');
 const protectedRoutes = require('../routes/protected');
@@ -18,6 +21,23 @@ const adminRoutes = require('../routes/admin');
 const proposalRoutes = require('../routes/proposals');
 
 const app = express();
+
+// Initialize database and associations
+const initializeDatabase = async () => {
+  try {
+    await sequelize.authenticate();
+    // Load associations after authenticate
+    require('../models/associations');
+    // Note: Removed sequelize.sync() for serverless - tables should be created via migrations
+    logger.info('Database connected successfully');
+  } catch (error) {
+    logger.error('Database connection failed:', error);
+    throw error;
+  }
+};
+
+// Initialize database on startup
+initializeDatabase();
 
 // CORS
 app.use(cors({ origin: config.corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }));
@@ -45,6 +65,8 @@ app.use('/api/proposals', proposalRoutes);
 app.use(errorHandler);
 
 logger.info('App initialized');
+
+// Export for Vercel serverless
 module.exports = app;
 
 

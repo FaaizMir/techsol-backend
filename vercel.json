@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "outputDirectory": null,
-  "functions": {
-    "api/index.js": {
-      "runtime": "@vercel/node"
-    }
-  }
+  "outputDirectory": null
 }
 

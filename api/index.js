@@ -42,7 +42,7 @@ initializeDatabase();
 // CORS
 app.use(
   cors({
-    origin: 'https://techsol-dj52-k9vp8u1zb-muhammad-ahmed-saleems-projects-7be8ac5a.vercel.app',
+    origin: 'http://vertic.netlify.app/',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })

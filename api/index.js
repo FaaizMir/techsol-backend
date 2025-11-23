@@ -42,7 +42,7 @@ initializeDatabase();
 // CORS
 app.use(
   cors({
-    origin: 'http://vertic.netlify.app/',
+    origin: 'https://vertic.netlify.app/',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })

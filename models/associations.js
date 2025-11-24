@@ -7,7 +7,6 @@ const OnboardingProgress = require('./OnboardingProgress');
 const Conversation = require('./Conversation');
 const Message = require('./Message');
 const Document = require('./Document');
-const ProposalDocument = require('./ProposalDocument');
 
 // User associations
 User.hasMany(Project, { foreignKey: 'userId', as: 'projects' });
@@ -15,7 +14,6 @@ User.hasMany(OnboardingProgress, { foreignKey: 'userId', as: 'onboardingProgress
 User.hasMany(Conversation, { foreignKey: 'agencyId', as: 'conversations' });
 User.hasMany(Document, { foreignKey: 'uploadedBy', as: 'uploadedDocuments' });
 User.hasMany(Document, { foreignKey: 'approvedBy', as: 'approvedDocuments' });
-User.hasMany(ProposalDocument, { foreignKey: 'userId', as: 'proposalDocuments' });
 
 // Project associations
 Project.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -24,11 +22,6 @@ Project.hasOne(Requirement, { foreignKey: 'projectId', as: 'requirement' });
 Project.hasMany(Milestone, { foreignKey: 'projectId', as: 'milestones' });
 Project.hasMany(Document, { foreignKey: 'projectId', as: 'documents' });
 Project.hasOne(OnboardingProgress, { foreignKey: 'projectId', as: 'onboardingProgress' });
-Project.hasOne(ProposalDocument, { foreignKey: 'projectId', as: 'proposalDocument' });
-
-// ProposalDocument associations
-ProposalDocument.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-ProposalDocument.belongsTo(Project, { foreignKey: 'projectId', as: 'project' });
 
 // Client associations
 Client.hasMany(Project, { foreignKey: 'clientId', as: 'projects' });

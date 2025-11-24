@@ -203,6 +203,21 @@ exports.createClient = async (req, res, next) => {
       status: status || 'active'
     });
 
+    // Also create a user account for the client for chat authentication
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('client123', 10); // Default password
+
+    const { User } = require('../models/associations');
+    await User.create({
+      email: email,
+      password: hashedPassword,
+      role: 'user', // Clients are users
+      firstName: contactPerson || name,
+      lastName: '',
+      company: company,
+      isOnboardingCompleted: true // Clients don't need onboarding
+    });
+
     res.status(201).json({
       success: true,
       data: {

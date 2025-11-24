@@ -24,7 +24,7 @@ const app = express();
 // CORS
 app.use(
   cors({
-    origin: config.corsOrigin,
+    origin: true, // Allow all origins for testing
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

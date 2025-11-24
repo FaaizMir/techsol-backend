@@ -4,7 +4,7 @@
   "main": "api/index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon server.js",
-    "start": "node api/index.js",
+    "start": "node server.js",
     "build": "echo 'No build step required'",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",

@@ -19,6 +19,9 @@ const sequelize = new Sequelize(
     },
     dialectOptions: {
       connectTimeout: 60000, // 60 seconds
+      ssl: {
+        rejectUnauthorized: false, // For Aiven or cloud DBs that require SSL
+      },
     },
   }
 );

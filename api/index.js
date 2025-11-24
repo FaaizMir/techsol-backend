@@ -40,11 +40,13 @@ const initializeDatabase = async () => {
 initializeDatabase();
 
 // CORS
+// CORS
 app.use(
   cors({
     origin: 'https://vertic.netlify.app/',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,  // Add this to allow credentials
   })
 );
 app.use(express.json());

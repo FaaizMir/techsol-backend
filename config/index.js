@@ -5,6 +5,7 @@ require('dotenv').config({
 module.exports = {
   port: process.env.PORT || 5000,
   jwtSecret: process.env.JWT_SECRET || 'default_secret',
+  corsOrigin: process.env.CORS_ORIGIN || 'https://vertic.netlify.app/',
   corsOrigins: ['http://localhost:3000', 'https://techsol-five.vercel.app'],
   database: {
     host: process.env.DB_HOST || 'localhost',

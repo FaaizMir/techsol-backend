@@ -1,9 +1,56 @@
-const app = require('./api/index');
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 const sequelize = require('./config/database');
 const config = require('./config/index');
 const logger = require('./utils/logger');
 const setupSockets = require("./socket");
 const http = require("http");
+const errorHandler = require('./middleware/errorHandler');
+
+// Routes
+const authRoutes = require('./routes/auth');
+const protectedRoutes = require('./routes/protected');
+const onboardingRoutes = require('./routes/onboarding');
+const dashboardRoutes = require('./routes/dashboard');
+const chatRoutes = require('./routes/chat');
+const documentsRoutes = require('./routes/documents');
+const clientsRoutes = require('./routes/clients');
+const profileRoutes = require('./routes/profile');
+const adminRoutes = require('./routes/admin');
+
+const app = express();
+
+// CORS
+app.use(
+  cors({
+    origin: config.corsOrigin,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
+app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health check
+app.get('/', (req, res) => res.json({ message: 'Server is running', timestamp: new Date().toISOString() }));
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/protected', protectedRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/documents', documentsRoutes);
+app.use('/api/clients', clientsRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Error handling
+app.use(errorHandler);
 
 const startServer = async () => {
   try {

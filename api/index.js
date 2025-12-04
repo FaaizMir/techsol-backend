@@ -42,7 +42,8 @@ initializeDatabase();
 // CORS
 app.use(
   cors({
-    origin: 'https://vertic.netlify.app/',
+    // origin: 'https://vertic.netlify.app/',
+    origin: 'https://techsol-five.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,  // Add this to allow credentials
